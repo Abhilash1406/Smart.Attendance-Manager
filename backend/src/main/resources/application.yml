@@ -1,0 +1,63 @@
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: smart-attendance-system
+
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/smart_attendance}
+      auto-index-creation: true
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 5MB
+      max-request-size: 10MB
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: Asia/Kolkata
+
+# JWT Configuration
+app:
+  jwt:
+    secret: ${JWT_SECRET:change-this-to-a-very-long-secret-key-at-least-256-bits-long-for-production}
+    expiration: ${JWT_EXPIRATION_MS:86400000}  # 24 hours in milliseconds
+
+  # Google OAuth
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:your-google-client-id.apps.googleusercontent.com}
+
+  # Allowed email domain for college
+  allowed-domain: ${ALLOWED_EMAIL_DOMAIN:kitsw.ac.in}
+
+  # Attendance window (24-hour format)
+  attendance:
+    window-start: ${ATTENDANCE_WINDOW_START:09:00}
+    window-end: ${ATTENDANCE_WINDOW_END:09:15}
+    photo-retention-days: ${PHOTO_RETENTION_DAYS:7}
+
+  # File storage
+  storage:
+    upload-dir: ${UPLOAD_DIR:./uploads/attendance}
+
+  # Network restriction - comma-separated allowed IP prefixes
+  network:
+    allowed-ips: ${ALLOWED_IPS:127.0.0.1,192.168.1.,10.0.0.,::1}
+
+  # CORS
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+
+# Logging
+logging:
+  level:
+    com.tp.attendance: ${LOG_LEVEL:DEBUG}
+    org.springframework.security: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

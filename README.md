@@ -1,324 +1,227 @@
 # Smart Attendance Management System
-### T&P Department — College Training & Placement
 
----
+A full-stack attendance management platform for college Training & Placement sessions with secure Google authentication, webcam-based attendance capture, admin approval workflows, and network-restricted access.
 
-## Overview
+## Features
 
-A full-stack attendance management system for college T&P sessions.
+### Student Features
 
-- Students log in with college Google accounts
-- Capture a live webcam photo to submit attendance
-- Admin reviews, approves, or rejects requests
-- Attendance photos auto-deleted after 7 days
-- Restricted to college WiFi only
+* Google OAuth login using college email
+* Live webcam photo capture for attendance
+* Attendance history tracking
+* Daily attendance status checking
+* JWT-based secure authentication
+
+### Admin Features
+
+* Approve/reject attendance requests
+* View pending requests dashboard
+* Daily attendance analytics
+* Student management
+* Attendance reports export support
+
+### Security Features
+
+* Restricted to college email domain
+* Restricted to college WiFi/IP ranges
+* JWT authentication
+* Automatic attendance photo cleanup
+* Role-based access control
 
 ---
 
 ## Tech Stack
 
-| Layer    | Technology                              |
-|----------|-----------------------------------------|
-| Frontend | React 18, Vite, Tailwind CSS            |
-| Backend  | Spring Boot 3.2, Java 21, Maven         |
-| Database | MongoDB                                 |
-| Auth     | Google OAuth 2.0 + JWT                  |
-| Storage  | Local filesystem (configurable)         |
+| Layer          | Technology                   |
+| -------------- | ---------------------------- |
+| Frontend       | React 18, Vite, Tailwind CSS |
+| Backend        | Spring Boot 3.2, Java 21     |
+| Database       | MongoDB                      |
+| Authentication | Google OAuth 2.0 + JWT       |
+| Build Tools    | Maven, npm                   |
+| Deployment     | Nginx + Spring Boot          |
+
+---
+
+## Architecture
+
+```text
+Frontend (React)
+        ↓
+REST API (Spring Boot)
+        ↓
+MongoDB Database
+        ↓
+Local File Storage (Attendance Photos)
+```
 
 ---
 
 ## Project Structure
 
-```
+```text
 smart-attendance/
-├── backend/      # Spring Boot application
-└── frontend/     # React + Vite application
+├── backend/
+│   ├── src/
+│   ├── uploads/
+│   └── pom.xml
+│
+└── frontend/
+    ├── src/
+    ├── public/
+    └── package.json
 ```
 
 ---
 
-## Prerequisites
+## Key Functionalities
 
-- Java 21+
-- Maven 3.9+
-- Node.js 18+
-- MongoDB 6+ (local or Atlas)
-- Google Cloud Console project with OAuth 2.0 credentials
+### Attendance Flow
 
----
+1. Student logs in using Google OAuth
+2. Webcam photo captured
+3. Attendance request submitted
+4. Admin reviews request
+5. Attendance approved/rejected
+6. Photos auto-delete after configured retention period
 
-## Step 1 — Google OAuth Setup
+### Network Restriction
 
-1. Go to https://console.cloud.google.com/
-2. Create a new project
-3. Navigate to **APIs & Services → Credentials**
-4. Create **OAuth 2.0 Client ID** → Web Application
-5. Add Authorized JavaScript origins:
-   - `http://localhost:5173`
-   - `http://localhost:8080`
-6. Add Authorized redirect URIs:
-   - `http://localhost:5173`
-7. Copy the **Client ID** — you'll need it for both backend and frontend
+Only users connected to the college network can mark attendance.
+
+### Automatic Cleanup
+
+Attendance photos are automatically removed after 7 days while preserving attendance records.
 
 ---
 
-## Step 2 — Backend Setup
+## Installation & Setup
 
-### Configure environment
+### Clone Repository
+
+```bash
+git clone https://github.com/Abhilash1406/Smart.Attendance-Manager.git
+cd Smart.Attendance-Manager
+```
+
+---
+
+## Backend Setup
 
 ```bash
 cd backend
 cp .env.example .env
 ```
 
-Edit `.env`:
+### Configure Environment Variables
 
 ```env
 MONGODB_URI=mongodb://localhost:27017/smart_attendance
-JWT_SECRET=your-minimum-32-char-secret-here-change-in-production
-GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+JWT_SECRET=your-secret-key
+GOOGLE_CLIENT_ID=your-google-client-id
 ALLOWED_EMAIL_DOMAIN=kitsw.ac.in
-ATTENDANCE_WINDOW_START=09:00
-ATTENDANCE_WINDOW_END=09:15
 PHOTO_RETENTION_DAYS=7
-UPLOAD_DIR=./uploads/attendance
-ALLOWED_IPS=127.0.0.1,::1,192.168.1.,10.0.0.
-CORS_ALLOWED_ORIGINS=http://localhost:5173
 ```
 
-### Generate JWT secret
+### Run Backend
 
 ```bash
-openssl rand -base64 64
+mvn spring-boot:run
 ```
 
-### Run the backend
+Backend runs at:
 
-```bash
-cd backend
-
-# Option A: Source env and run with Maven
-export $(cat .env | xargs) && mvn spring-boot:run
-
-# Option B: Set env in your IDE (IntelliJ run config)
-# then: mvn spring-boot:run
-
-# Option C: Build JAR and run
-mvn clean package -DskipTests
-java -jar target/attendance-1.0.0.jar
+```text
+http://localhost:8080
 ```
-
-Backend starts at: http://localhost:8080
 
 ---
 
-## Step 3 — Frontend Setup
+## Frontend Setup
 
 ```bash
 cd frontend
 cp .env.example .env.local
-```
-
-Edit `.env.local`:
-
-```env
-VITE_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
-VITE_API_BASE_URL=/api
-```
-
-Install dependencies and run:
-
-```bash
 npm install
 npm run dev
 ```
 
-Frontend starts at: http://localhost:5173
+Frontend runs at:
 
----
-
-## Step 4 — Create Admin User
-
-By default, all new users get the STUDENT role.
-To make someone an admin, update their role directly in MongoDB:
-
-```javascript
-// In MongoDB shell or Compass
-use smart_attendance
-
-db.users.updateOne(
-  { email: "admin@kitsw.ac.in" },
-  { $set: { role: "ADMIN" } }
-)
+```text
+http://localhost:5173
 ```
 
-Or insert an admin directly (the user must log in first, then update):
-
-1. Log in with the admin Google account (domain must match)
-2. Run the update above in MongoDB
-3. Log out and log back in — they'll be routed to the Admin Dashboard
-
 ---
 
-## API Reference
+## API Endpoints
 
 ### Authentication
 
-```
-POST /api/auth/google
-Body: { "idToken": "<google_id_token>" }
-Response: { "token": "jwt...", "user": {...} }
+| Method | Endpoint         |
+| ------ | ---------------- |
+| POST   | /api/auth/google |
+| GET    | /api/auth/me     |
 
-GET /api/auth/me
-Headers: Authorization: Bearer <jwt>
-```
+### Student APIs
 
-### Student Endpoints
+| Method | Endpoint                     |
+| ------ | ---------------------------- |
+| POST   | /api/attendance/mark         |
+| GET    | /api/attendance/history      |
+| GET    | /api/attendance/status/today |
 
-```
-POST /api/attendance/mark
-Headers: Authorization: Bearer <jwt>
-Body: multipart/form-data { photo: <file> }
+### Admin APIs
 
-GET /api/attendance/history
-Headers: Authorization: Bearer <jwt>
-
-GET /api/attendance/status/today
-Headers: Authorization: Bearer <jwt>
-```
-
-### Admin Endpoints
-
-```
-GET  /api/admin/pending
-GET  /api/admin/requests
-POST /api/admin/approve/{id}     Body: { "remarks": "..." }
-POST /api/admin/reject/{id}      Body: { "remarks": "..." }
-GET  /api/admin/stats/daily      ?date=2024-06-01
-GET  /api/admin/reports          ?from=2024-06-01&to=2024-06-30
-GET  /api/admin/students
-```
-
----
-
-## Key Configuration
-
-### Attendance Window
-
-Edit `application.yml` or set env vars:
-
-```yaml
-app:
-  attendance:
-    window-start: "09:00"
-    window-end:   "09:15"
-```
-
-To allow marking all day during development:
-
-```env
-ATTENDANCE_WINDOW_START=00:00
-ATTENDANCE_WINDOW_END=23:59
-```
-
-### Network Restriction
-
-```env
-# Comma-separated. Supports exact IP or prefix (e.g., 192.168.1.)
-ALLOWED_IPS=127.0.0.1,::1,192.168.1.,10.0.0.
-```
-
-During local development, `127.0.0.1` and `::1` are always included.
-
-### Photo Cleanup
-
-```env
-PHOTO_RETENTION_DAYS=7   # Photos deleted after N days, attendance record preserved
-```
-
-Cleanup runs automatically at 2:00 AM daily via Spring Scheduler.
+| Method | Endpoint                |
+| ------ | ----------------------- |
+| GET    | /api/admin/pending      |
+| POST   | /api/admin/approve/{id} |
+| POST   | /api/admin/reject/{id}  |
+| GET    | /api/admin/reports      |
 
 ---
 
 ## Production Deployment
 
-### Backend
+### Backend Build
 
 ```bash
-# Build production JAR
 mvn clean package -DskipTests
-
-# Run with production config
-java -jar target/attendance-1.0.0.jar \
-  --spring.profiles.active=prod \
-  --MONGODB_URI=mongodb+srv://... \
-  --JWT_SECRET=<secure-256bit-secret> \
-  --GOOGLE_CLIENT_ID=<client-id> \
-  --ALLOWED_EMAIL_DOMAIN=kitsw.ac.in \
-  --CORS_ALLOWED_ORIGINS=https://yourfrontend.com
 ```
 
-### Frontend
+### Frontend Build
 
 ```bash
-# Build for production
 npm run build
-# Output in dist/ — serve with Nginx or any static host
-```
-
-### Nginx example (serves frontend + proxies API)
-
-```nginx
-server {
-    listen 80;
-    server_name yourdomain.com;
-
-    root /var/www/dist;
-    index index.html;
-
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    location /api/ {
-        proxy_pass http://localhost:8080/api/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-
-    location /uploads/ {
-        proxy_pass http://localhost:8080/uploads/;
-    }
-}
 ```
 
 ---
 
-## Security Notes
+## Future Improvements
 
-- JWT secret must be at least 256 bits in production
-- Never commit `.env` or `.env.local` files
-- Set `ALLOWED_IPS` to actual college network ranges
-- Set `ALLOWED_EMAIL_DOMAIN` to your college domain
-- Use HTTPS in production (update CORS origins accordingly)
-- MongoDB should require authentication in production
+* Face recognition verification
+* Email notifications
+* Attendance export to Excel/PDF
+* Real-time admin dashboard
+* Docker containerization
+* Cloud storage integration
 
 ---
 
-## Troubleshooting
+## Security Considerations
 
-**Google login says "domain not allowed"**
-→ Your Google account email domain doesn't match `ALLOWED_EMAIL_DOMAIN`
+* Use HTTPS in production
+* Secure JWT secrets
+* Restrict allowed IP ranges
+* Enable MongoDB authentication
+* Never commit `.env` files
 
-**Camera not loading**
-→ Browser requires HTTPS for webcam in production. Use localhost for dev.
+---
 
-**"Attendance can only be marked from college network"**
-→ Your IP is not in `ALLOWED_IPS`. Add `127.0.0.1` for local testing.
+## Author
 
-**Photos not serving**
-→ Check `UPLOAD_DIR` path exists and Spring has write permissions.
+Abhilash
 
-**MongoDB connection error**
-→ Verify `MONGODB_URI` and that MongoDB is running on the correct port.
+GitHub:
+https://github.com/Abhilash1406

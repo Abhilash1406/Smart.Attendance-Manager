@@ -8,6 +8,7 @@ import com.tp.attendance.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import java.util.Comparator;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -21,9 +22,9 @@ import java.util.stream.Collectors;
 public class AdminService {
 
     private final AttendanceRequestRepository requestRepository;
-    private final AttendanceRepository        attendanceRepository;
-    private final UserRepository              userRepository;
-    private final UserService                 userService;
+    private final AttendanceRepository attendanceRepository;
+    private final UserRepository userRepository;
+    private final UserService userService;
 
     /**
      * Get all pending attendance requests.
@@ -107,10 +108,10 @@ public class AdminService {
     public DailyStatsResponse getDailyStats(LocalDate date) {
         List<AttendanceRequest> dayRequests = requestRepository.findBySubmissionDateBetween(date, date);
 
-        long pending  = dayRequests.stream().filter(r -> r.getStatus() == AttendanceStatus.PENDING).count();
+        long pending = dayRequests.stream().filter(r -> r.getStatus() == AttendanceStatus.PENDING).count();
         long approved = dayRequests.stream().filter(r -> r.getStatus() == AttendanceStatus.APPROVED).count();
         long rejected = dayRequests.stream().filter(r -> r.getStatus() == AttendanceStatus.REJECTED).count();
-        long total    = userRepository.findByRoleAndIsActiveTrue(Role.STUDENT).size();
+        long total = userRepository.findByRoleAndIsActiveTrue(Role.STUDENT).size();
 
         return DailyStatsResponse.builder()
                 .date(date)
@@ -144,9 +145,8 @@ public class AdminService {
                 .stream()
                 // Null-safe sort: records with null submittedAt go last
                 .sorted(Comparator.comparing(
-                    AttendanceRequest::getSubmittedAt,
-                    Comparator.nullsLast(Comparator.reverseOrder())
-                ))
+                        AttendanceRequest::getSubmittedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
                 .map(r -> {
                     User student = userService.findById(r.getStudentId());
                     return AttendanceRequestResponse.from(r, student);

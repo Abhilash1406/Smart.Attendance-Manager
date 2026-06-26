@@ -26,15 +26,15 @@ spring:
 # JWT Configuration
 app:
   jwt:
-    secret: ${JWT_SECRET:change-this-to-a-very-long-secret-key-at-least-256-bits-long-for-production}
+    secret: ${JWT_SECRET:GLCcWyVbrvIhkm3M+481XaMiTHfFdC7x3UVXasdVggtWpyAXWcdjTpcp+T5mSuht6dNHak+zlWUtvuHiFapNxA==}
     expiration: ${JWT_EXPIRATION_MS:86400000}  # 24 hours in milliseconds
 
   # Google OAuth
   google:
-    client-id: ${GOOGLE_CLIENT_ID:your-google-client-id.apps.googleusercontent.com}
+    client-id: ${GOOGLE_CLIENT_ID:162998811472-bduh3mgdctd89fo6dm39ntha4mbsmnj7.apps.googleusercontent.com}
 
-  # Allowed email domain for college
-  allowed-domain: ${ALLOWED_EMAIL_DOMAIN:kitsw.ac.in}
+  # Comma-separated list of allowed email domains
+  allowed-domains: ${ALLOWED_EMAIL_DOMAINS:kitsw.ac.in,gmail.com}
 
   # Attendance window (24-hour format)
   attendance:

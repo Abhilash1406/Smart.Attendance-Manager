@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -40,7 +42,7 @@ public class AuthService {
         String picture = (String) payload.get("picture");
         String googleId = payload.getSubject();
 
-        // Step 2: Domain validation
+        // Step 2: Domain validation (allows any domain in the configured list)
         validateEmailDomain(email);
 
         // Step 3: Determine role
@@ -72,14 +74,18 @@ public class AuthService {
     }
 
     private void validateEmailDomain(String email) {
-        String allowedDomain = appProperties.getAllowedDomain();
-        if (!email.endsWith("@" + allowedDomain)) {
+        List<String> allowedDomains = appProperties.getAllowedDomainList();
+        boolean allowed = allowedDomains.stream()
+                .anyMatch(domain -> email.endsWith("@" + domain));
+
+        if (!allowed) {
             log.warn("Rejected login attempt from unauthorized domain: {}", email);
+            String domainsDisplay = String.join(" or ", allowedDomains);
             throw AppException.forbidden(
                 String.format(
                     "Access restricted to %s email accounts only. " +
-                    "Please use your college email address.",
-                    allowedDomain
+                    "Please use an authorised email address.",
+                    domainsDisplay
                 )
             );
         }

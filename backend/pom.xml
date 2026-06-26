@@ -15,10 +15,9 @@
     <artifactId>attendance</artifactId>
     <version>1.0.0</version>
     <name>Smart Attendance Management System</name>
-    <description>T&P Smart Attendance Management System</description>
-
+    <description>Training and Placement Smart Attendance Management System</description>
     <properties>
-        <java.version>21</java.version>
+        <java.version>17</java.version>
         <jjwt.version>0.12.5</jjwt.version>
         <google-api-client.version>2.4.0</google-api-client.version>
         <google-oauth-client.version>1.36.0</google-oauth-client.version>

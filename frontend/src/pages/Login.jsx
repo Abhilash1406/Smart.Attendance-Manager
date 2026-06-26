@@ -103,11 +103,14 @@ const Login = () => {
           {/* Notice */}
           <div className="bg-primary-50 border border-primary-100 rounded-xl p-4">
             <p className="text-primary-800 text-sm font-medium mb-1">
-              🔒 College accounts only
+              🔒 Authorised accounts only
             </p>
             <p className="text-primary-600 text-xs">
-              Only <code className="bg-primary-100 px-1 rounded">@kitsw.ac.in</code> email addresses are permitted.
-              Personal Gmail accounts will be rejected.
+              Sign in with your{' '}
+              <code className="bg-primary-100 px-1 rounded">@kitsw.ac.in</code>{' '}
+              college account <span className="font-medium">or</span>{' '}
+              <code className="bg-primary-100 px-1 rounded">@gmail.com</code>{' '}
+              personal account. Other email domains will be rejected.
             </p>
           </div>
 

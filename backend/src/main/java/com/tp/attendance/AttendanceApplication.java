@@ -9,7 +9,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import com.tp.attendance.config.AppProperties;
 
 @SpringBootApplication
-@EnableMongoAuditing
 @EnableScheduling
 @EnableConfigurationProperties(AppProperties.class)
 public class AttendanceApplication {

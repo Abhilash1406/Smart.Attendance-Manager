@@ -6,7 +6,7 @@ A full-stack attendance management platform for college Training & Placement ses
 
 ### Student Features
 
-* Google OAuth login using college email
+* Google OAuth login using college or personal Google email
 * Live webcam photo capture for attendance
 * Attendance history tracking
 * Daily attendance status checking
@@ -22,11 +22,12 @@ A full-stack attendance management platform for college Training & Placement ses
 
 ### Security Features
 
-* Restricted to college email domain
+* Restricted to authorised email domains (`@kitsw.ac.in` and `@gmail.com`)
+* Additional domains can be added via config without code changes
 * Restricted to college WiFi/IP ranges
-* JWT authentication
+* JWT authentication with a cryptographically secure secret
 * Automatic attendance photo cleanup
-* Role-based access control
+* Role-based access control (STUDENT / ADMIN)
 
 ---
 
@@ -35,7 +36,7 @@ A full-stack attendance management platform for college Training & Placement ses
 | Layer          | Technology                   |
 | -------------- | ---------------------------- |
 | Frontend       | React 18, Vite, Tailwind CSS |
-| Backend        | Spring Boot 3.2, Java 21     |
+| Backend        | Spring Boot 3.2, Java 17     |
 | Database       | MongoDB                      |
 | Authentication | Google OAuth 2.0 + JWT       |
 | Build Tools    | Maven, npm                   |
@@ -46,10 +47,10 @@ A full-stack attendance management platform for college Training & Placement ses
 ## Architecture
 
 ```text
-Frontend (React)
-        ↓
+Frontend (React + Vite)
+        ↓  Google ID Token
 REST API (Spring Boot)
-        ↓
+        ↓  Verify token → upsert user → issue JWT
 MongoDB Database
         ↓
 Local File Storage (Attendance Photos)
@@ -63,18 +64,39 @@ Local File Storage (Attendance Photos)
 smart-attendance/
 ├── backend/
 │   ├── src/
+│   │   └── main/
+│   │       ├── java/com/tp/attendance/
+│   │       └── resources/application.yml
 │   ├── uploads/
+│   ├── .env
 │   └── pom.xml
 │
 └── frontend/
     ├── src/
     ├── public/
+    ├── .env
     └── package.json
 ```
 
 ---
 
 ## Key Functionalities
+
+### Authentication Flow
+
+```text
+React Login Button
+→ Google Popup
+→ Google ID Token
+→ POST /api/auth/google
+→ Server-side Google token verification
+→ Email domain check (kitsw.ac.in or gmail.com)
+→ MongoDB user lookup / creation
+→ JWT generation
+→ Response to frontend
+→ Store JWT in localStorage
+→ Redirect to Dashboard
+```
 
 ### Attendance Flow
 
@@ -108,24 +130,44 @@ cd Smart.Attendance-Manager
 
 ## Backend Setup
 
-```bash
-cd backend
-cp .env.example .env
+### Configure `application.yml`
+
+All runtime values are configured in `backend/src/main/resources/application.yml` with sensible defaults. Override any value by setting the corresponding environment variable listed in `backend/.env`.
+
+Key configuration values:
+
+```yaml
+app:
+  jwt:
+    secret: ${JWT_SECRET:<your-base64-secret>}      # Min 256-bit Base64 string
+    expiration: ${JWT_EXPIRATION_MS:86400000}        # 24 hours
+
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:<your-client-id>} # From Google Cloud Console
+
+  allowed-domains: ${ALLOWED_EMAIL_DOMAINS:kitsw.ac.in,gmail.com}
+  # Comma-separated list — add any domain without changing code
+
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
 ```
 
-### Configure Environment Variables
+> **Important:** Spring Boot does **not** auto-load `.env` files. Set the variables as OS environment variables, or update the defaults directly in `application.yml` for local development.
 
-```env
-MONGODB_URI=mongodb://localhost:27017/smart_attendance
-JWT_SECRET=your-secret-key
-GOOGLE_CLIENT_ID=your-google-client-id
-ALLOWED_EMAIL_DOMAIN=kitsw.ac.in
-PHOTO_RETENTION_DAYS=7
-```
+### Google Cloud Console Setup
+
+1. Go to [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials).
+2. Create an **OAuth 2.0 Client ID** (Web application type).
+3. Under **Authorised JavaScript origins**, add:
+   ```
+   http://localhost:5173
+   ```
+4. Copy the Client ID into `application.yml` (or set `GOOGLE_CLIENT_ID` env var).
 
 ### Run Backend
 
 ```bash
+cd backend
 mvn spring-boot:run
 ```
 
@@ -141,10 +183,18 @@ http://localhost:8080
 
 ```bash
 cd frontend
-cp .env.example .env.local
 npm install
 npm run dev
 ```
+
+### Configure `frontend/.env`
+
+```env
+VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+VITE_API_BASE_URL=/api
+```
+
+> Vite only reads `.env` at startup — restart the dev server after any changes.
 
 Frontend runs at:
 
@@ -158,27 +208,47 @@ http://localhost:5173
 
 ### Authentication
 
-| Method | Endpoint         |
-| ------ | ---------------- |
-| POST   | /api/auth/google |
-| GET    | /api/auth/me     |
+| Method | Endpoint         | Access |
+| ------ | ---------------- | ------ |
+| POST   | /api/auth/google | Public |
+| GET    | /api/auth/me     | Authenticated |
 
 ### Student APIs
 
-| Method | Endpoint                     |
-| ------ | ---------------------------- |
-| POST   | /api/attendance/mark         |
-| GET    | /api/attendance/history      |
-| GET    | /api/attendance/status/today |
+| Method | Endpoint                     | Access  |
+| ------ | ---------------------------- | ------- |
+| POST   | /api/attendance/mark         | STUDENT |
+| GET    | /api/attendance/history      | STUDENT |
+| GET    | /api/attendance/status/today | STUDENT |
 
 ### Admin APIs
 
-| Method | Endpoint                |
-| ------ | ----------------------- |
-| GET    | /api/admin/pending      |
-| POST   | /api/admin/approve/{id} |
-| POST   | /api/admin/reject/{id}  |
-| GET    | /api/admin/reports      |
+| Method | Endpoint                | Access |
+| ------ | ----------------------- | ------ |
+| GET    | /api/admin/pending      | ADMIN  |
+| POST   | /api/admin/approve/{id} | ADMIN  |
+| POST   | /api/admin/reject/{id}  | ADMIN  |
+| GET    | /api/admin/reports      | ADMIN  |
+| GET    | /api/admin/stats/daily  | ADMIN  |
+
+---
+
+## Email Domain Configuration
+
+Allowed email domains are controlled by a single comma-separated config value — no code changes required to add or remove domains:
+
+**`application.yml`**
+```yaml
+app:
+  allowed-domains: kitsw.ac.in,gmail.com
+```
+
+Or via environment variable:
+```env
+ALLOWED_EMAIL_DOMAINS=kitsw.ac.in,gmail.com
+```
+
+Users from any other domain will receive a `403 Forbidden` error with a clear message listing the accepted domains.
 
 ---
 
@@ -187,13 +257,17 @@ http://localhost:5173
 ### Backend Build
 
 ```bash
+cd backend
 mvn clean package -DskipTests
+java -jar target/attendance-1.0.0.jar
 ```
 
 ### Frontend Build
 
 ```bash
+cd frontend
 npm run build
+# Serve the dist/ folder via Nginx or any static file server
 ```
 
 ---
@@ -201,21 +275,22 @@ npm run build
 ## Future Improvements
 
 * Face recognition verification
-* Email notifications
+* Email notifications for attendance approval/rejection
 * Attendance export to Excel/PDF
-* Real-time admin dashboard
+* Real-time admin dashboard (WebSocket)
 * Docker containerization
-* Cloud storage integration
+* Cloud storage integration (S3/GCS)
 
 ---
 
 ## Security Considerations
 
 * Use HTTPS in production
-* Secure JWT secrets
-* Restrict allowed IP ranges
-* Enable MongoDB authentication
-* Never commit `.env` files
+* Generate a strong JWT secret (`openssl rand -base64 64`)
+* Restrict allowed IP ranges to college network only
+* Enable MongoDB authentication in production
+* Never commit `.env` files to version control
+* Rotate the JWT secret periodically
 
 ---
 
@@ -223,5 +298,4 @@ npm run build
 
 Abhilash
 
-GitHub:
-https://github.com/Abhilash1406
+GitHub: https://github.com/Abhilash1406

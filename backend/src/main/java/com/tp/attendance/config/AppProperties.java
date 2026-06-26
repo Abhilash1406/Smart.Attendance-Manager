@@ -20,8 +20,16 @@ public class AppProperties {
     @NotNull
     private Google google = new Google();
 
-    @NotBlank
-    private String allowedDomain = "kitsw.ac.in";
+    // Comma-separated list of allowed email domains, e.g. "kitsw.ac.in,gmail.com"
+    private String allowedDomains = "kitsw.ac.in,gmail.com";
+
+    public List<String> getAllowedDomainList() {
+        return List.of(allowedDomains.split(","))
+                   .stream()
+                   .map(String::trim)
+                   .filter(d -> !d.isEmpty())
+                   .toList();
+    }
 
     @NotNull
     private Attendance attendance = new Attendance();
